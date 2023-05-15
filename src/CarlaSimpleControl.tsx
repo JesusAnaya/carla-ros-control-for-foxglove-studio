@@ -1,7 +1,8 @@
 import { PanelExtensionContext } from "@foxglove/studio";
 import { useState, useEffect, useLayoutEffect, useCallback } from "react";
 import ReactDOM from "react-dom";
-import { Slider, Checkbox, PrimaryButton, TextField } from "@fluentui/react";
+import { Slider, Checkbox, TextField } from "@fluentui/react";
+import BrakeComponent from './BrakeComponent';
 
 interface VehicleControl {
   steer: number;
@@ -12,7 +13,6 @@ interface VehicleControl {
   manual_gear_shift: boolean;
   gear: number;
 }
-
 
 function CarlaSimpleControllPanel({ context }: { context: PanelExtensionContext }): JSX.Element {
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
@@ -50,9 +50,13 @@ function CarlaSimpleControllPanel({ context }: { context: PanelExtensionContext 
     publishVehicleControl(vehicleControl);
   }, []);
 
-  const handleBrakeButtonClick = useCallback(() => setBrake((value) => (value === 0) ? 1 : 0), []);
-
-  const handleReverseChange = useCallback((_: React.FormEvent<HTMLElement | HTMLInputElement> | undefined, checked?: boolean | undefined) => setReverse(checked ?? false), []);
+  const handleReverseChange = (_ev: React.FormEvent<HTMLInputElement | HTMLElement> = {} as any, checked?: boolean) => {
+    if (checked !== undefined) {
+      setReverse(checked);
+      vehicleControl.reverse = checked;
+      publishVehicleControl(vehicleControl);
+    }
+  };   
   
   useLayoutEffect(() => {
     context.onRender = (_, done) => {
@@ -122,11 +126,7 @@ function CarlaSimpleControllPanel({ context }: { context: PanelExtensionContext 
         />
       </div>
 
-      <div>
-        <PrimaryButton onClick={handleBrakeButtonClick}>
-          {brake ? "Deactivate Brake" : "Activate Brake"}
-        </PrimaryButton>
-      </div>
+      <BrakeComponent brake={brake} setBrake={setBrake} />
 
       <div>
         <TextField
