@@ -32,6 +32,7 @@ function CarlaSimpleControllPanel({ context }: { context: PanelExtensionContext 
   const [brake, setBrake] = useState(0);
   const [reverse, setReverse] = useState(false);
   const [customTopic, setCustomTopic] = useState("/carla/vehicle/control");
+  const [recording, setRecording] = useState(false);
 
   const publishVehicleControl = (value: VehicleControl) => {
     setVehicleControl(value);
@@ -56,8 +57,15 @@ function CarlaSimpleControllPanel({ context }: { context: PanelExtensionContext 
       vehicleControl.reverse = checked;
       publishVehicleControl(vehicleControl);
     }
-  };   
-  
+  };
+
+  const handleRecordingChange = useCallback((_ev: React.FormEvent<HTMLInputElement | HTMLElement> = {} as any, checked?: boolean) => {
+    if (checked !== undefined) {
+      setRecording(checked);
+      context.publish?.("/ros2/service/recording", { data: checked });
+    }
+  }, [context]);
+
   useLayoutEffect(() => {
     context.onRender = (_, done) => {
       setRenderDone(() => done);
@@ -135,6 +143,15 @@ function CarlaSimpleControllPanel({ context }: { context: PanelExtensionContext 
           onChange={(_, newValue) => setCustomTopic(newValue || "")}
         />
       </div>
+
+      <div>
+        <Checkbox
+          label="Recording"
+          checked={recording}
+          onChange={handleRecordingChange}
+        />
+      </div>
+
     </div>
   );
 }
