@@ -4,65 +4,59 @@ import ReactDOM from "react-dom";
 import { Slider, Checkbox, TextField } from "@fluentui/react";
 import BrakeComponent from './BrakeComponent';
 
-interface VehicleControl {
+interface EgoControl {
   steer: number;
-  throttle: number;
+  speed: number;
   brake: number;
   reverse: boolean;
-  hand_brake: boolean;
-  manual_gear_shift: boolean;
-  gear: number;
 }
 
-function CarlaSimpleControllPanel({ context }: { context: PanelExtensionContext }): JSX.Element {
+function AVSimpleControllPanel({ context }: { context: PanelExtensionContext }): JSX.Element {
   const [renderDone, setRenderDone] = useState<(() => void) | undefined>();
 
-  const [vehicleControl, setVehicleControl] = useState({
-    throttle: 0,
+  const [EgoControl, setEgoControl] = useState({
+    speed: 0,
     steer: 0,
     brake: 0,
-    hand_brake: false,
     reverse: false,
-    manual_gear_shift: false,
-    gear: 0,
   });
   
   const [steer, setSteer] = useState(0);
-  const [throttle, setThrottle] = useState(0);
+  const [speed, setSpeed] = useState(0);
   const [brake, setBrake] = useState(0);
   const [reverse, setReverse] = useState(false);
-  const [customTopic, setCustomTopic] = useState("/carla/vehicle/control");
+  const [customTopic, setCustomTopic] = useState("/av/ego/control");
   const [recording, setRecording] = useState(false);
 
-  const publishVehicleControl = (value: VehicleControl) => {
-    setVehicleControl(value);
-    context.publish?.(customTopic, vehicleControl);
+  const publishEgoControl = (value: EgoControl) => {
+    setEgoControl(value);
+    context.publish?.(customTopic, EgoControl);
   };
 
   const handleSteerChange = useCallback((value: number) => {
     setSteer(value);
-    vehicleControl.steer = value;
-    publishVehicleControl(vehicleControl);
+    EgoControl.steer = value;
+    publishEgoControl(EgoControl);
   }, []);
 
-  const handleThrottleChange = useCallback((value: number) => {
-    setThrottle(value);
-    vehicleControl.throttle = value;
-    publishVehicleControl(vehicleControl);
+  const handleSpeedChange = useCallback((value: number) => {
+    setSpeed(value);
+    EgoControl.speed = value;
+    publishEgoControl(EgoControl);
   }, []);
 
   const handleReverseChange = (_ev: React.FormEvent<HTMLInputElement | HTMLElement> = {} as any, checked?: boolean) => {
     if (checked !== undefined) {
       setReverse(checked);
-      vehicleControl.reverse = checked;
-      publishVehicleControl(vehicleControl);
+      EgoControl.reverse = checked;
+      publishEgoControl(EgoControl);
     }
   };
 
   const handleRecordingChange = useCallback((_ev: React.FormEvent<HTMLInputElement | HTMLElement> = {} as any, checked?: boolean) => {
     if (checked !== undefined) {
       setRecording(checked);
-      context.publish?.("/ros2/service/recording", { data: checked });
+      context.publish?.("/carla-bridge/recording", { data: checked });
     }
   }, [context]);
 
@@ -72,18 +66,15 @@ function CarlaSimpleControllPanel({ context }: { context: PanelExtensionContext 
     };    
 
     context.watch("currentFrame");
-    context.advertise?.(customTopic, "custom_interfaces/msg/VehicleControl", {
+    context.advertise?.(customTopic, "carla_ros_interfaces/msg/EgoVehicleControl", {
       datatypes: new Map(
         Object.entries({
-          "custom_interfaces/msg/VehicleControl": { 
+          "carla_ros_interfaces/msg/EgoVehicleControl": { 
             definitions: [
-              {name: "throttle", type: "float32"},
+              {name: "speed", type: "float32"},
               {name: "steer", type: "float32"},
               {name: "brake", type: "float32"},
-              {name: "hand_brake", type: "bool"},
               {name: "reverse", type: "bool"},
-              {name: "manual_gear_shift", type: "bool"},
-              {name: "gear", type: "int32"},
             ]
           },
         }),
@@ -98,9 +89,9 @@ function CarlaSimpleControllPanel({ context }: { context: PanelExtensionContext 
 
   return (
     <div style={{ padding: "1rem" }}>
-      <h2>Carla Vehicle Control Panel</h2>
+      <h2>Autonomous Vehicle Control Panel</h2>
       <p>
-        Configure the vehicle control in Carla Simulator using this custom panel.
+        Configure the vehicle control using this custom panel.
       </p>
 
       <div>
@@ -115,13 +106,13 @@ function CarlaSimpleControllPanel({ context }: { context: PanelExtensionContext 
       </div>
 
       <div>
-        <label>Throttle:</label>
+        <label>Velocity Km/h:</label>
         <Slider
           min={0}
-          max={1}
-          step={0.05}
-          value={throttle}
-          onChange={handleThrottleChange}
+          max={50}
+          step={0.5}
+          value={speed}
+          onChange={handleSpeedChange}
 
         />
       </div>
@@ -156,8 +147,8 @@ function CarlaSimpleControllPanel({ context }: { context: PanelExtensionContext 
   );
 }
 
-export function initCarlaSimpleControllPanel(context: PanelExtensionContext): () => void {
-  ReactDOM.render(<CarlaSimpleControllPanel context={context} />, context.panelElement);
+export function initAVSimpleControllPanel(context: PanelExtensionContext): () => void {
+  ReactDOM.render(<AVSimpleControllPanel context={context} />, context.panelElement);
 
   return () => {
     ReactDOM.unmountComponentAtNode(context.panelElement);
